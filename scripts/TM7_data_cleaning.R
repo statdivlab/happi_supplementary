@@ -1,7 +1,15 @@
 ## R script to create TM7_presence_absence.RDS
 # Goal: take the mean coverage information and combine it with the gene function frequency 
 library(tidyverse)
-## TM7-functions-occurrence-frequency.txt was created using anvi'o 
+#######################################################################################################################
+#### TM7-functions-occurrence-frequency.txt was created using anvi'o version 6 with the following python/conda script:
+# anvi-compute-functional-enrichment -p TM7-PAN.db \                                                                    
+# -g TM7-GENOMES.db \
+# --annotation-source COG_FUNCTION \
+# --category-variable Clade \
+# -o TM7-enriched-functions-clade.txt \
+# --functional-occurrence-table-output TM7-functions-occurrence-frequency.txt
+#######################################################################################################################
 functions <- read_tsv("TM7-functions-occurrence-frequency.txt")
 functions_subset <- subset(functions, select = c(`X1`,`ORAL_P_A_F_Bin_00012`:`ORAL_T_D_F_MAG_00010`))
 #colnames(functions_subset)[1] <- "MAGs_Id"
