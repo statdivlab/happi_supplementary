@@ -1,5 +1,7 @@
 ## R script to create TM7_presence_absence.RDS
-# Goal: take the mean coverage information and combine it with the gene function frequency 
+## All necessary data files can be found in the folder:
+# happi_supplementary/data/TM7_data_cleaning_files/
+
 library(tidyverse)
 #######################################################################################################################
 #### TM7-functions-occurrence-frequency.txt was created using anvi'o version 6 with the following python/conda script:
