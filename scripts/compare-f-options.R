@@ -59,8 +59,8 @@ expit_likelihood <- function(par, my_data){
 }
 
 compare_f <- function(sim) {
-  results_out <- matrix(NA, nrow = niter, ncol = 8)
-  colnames(results_out) <- c("sim", "nn", "xx_sd", "beta0", "beta1", "monotone", "expit", "univar")
+  results_out <- matrix(NA, nrow = niter, ncol = 9)
+  colnames(results_out) <- c("sim", "nn", "xx_sd", "beta0", "beta1", "monotone", "spline", "expit", "univar")
   results_out[, "sim"] <- sim
   results_out[, "nn"] <- combos$ns[sim]
   results_out[, "xx_sd"] <- combos$xx_sds[sim]
@@ -88,10 +88,20 @@ compare_f <- function(sim) {
       happi_monotone <- happi(outcome = ys,
                               covariate = xx,
                               quality_var = mm,
-                              max_iterations = 50,
+                              max_iterations = 100,
+                              firth=T, method="isotone",
                               nstarts = 1,
                               change_threshold = 0.1,
                               epsilon = 0)
+
+      happi_spline <- happi(outcome = ys,
+                            covariate = xx,
+                            quality_var = mm,
+                            max_iterations = 100,
+                            firth=T, method="spline",
+                            nstarts = 1,
+                            change_threshold = 0.1,
+                            epsilon = 0)
 
       draw <- tibble(Y = ys, X1 = x1, coverage = mm)
       happi_univar <- optimx::optimx(c(0, 0, 20),
@@ -110,6 +120,7 @@ compare_f <- function(sim) {
                                     control = list(trace = 0, fnscale= -1))
 
       results_out[bb, "monotone"] <- happi_monotone$beta[!is.na(happi_monotone$beta[,2]),2] %>% tail(1)
+      results_out[bb, "spline"] <- happi_spline$beta[!is.na(happi_spline$beta[,2]),2] %>% tail(1)
       results_out[bb, "univar"] <- happi_univar[1,2]
       results_out[bb, "expit"] <- happi_expit[1, 2]
 
@@ -122,45 +133,85 @@ compare_f <- function(sim) {
 ####################
 #### 1st run ######
 ####################
-ns <- c(30, 50)
+ns <- c(30, 50, 100)
 xx_sds <- c(0.25, 0.5)
-beta0 <- c(0)
+beta0 <- c(0, 1)
 beta1 <- c(0.5, 1, 2)
 combos <- crossing(xx_sds, ns, beta0, beta1)
 combos <- bind_cols("sim" = 1:nrow(combos), combos)
 combos
 
+niter <- 25
+set.seed(104)
+compare_f_run1 <- mclapply(1:36, compare_f, mc.cores = 6)
+system("say done")
+
 ####################
 #### 2nd run #######
 ####################
-niter <- 50
-set.seed(104)
-compare_f_run1 <- mclapply(1:12, compare_f, mc.cores = 6)
-niter <- 150
-set.seed(105)
-compare_f_run2 <- mclapply(1:12, compare_f, mc.cores = 6)
+# niter <- 150
+# set.seed(105)
+# compare_f_run2 <- mclapply(1:12, compare_f, mc.cores = 6)
 
-errors <- c(compare_f_run1, compare_f_run2) %>%
+errors <- compare_f_run1 %>% #c(compare_f_run1, compare_f_run2) %>%
   do.call(rbind, .) %>%
   as_tibble %>%
-  pivot_longer(6:8) %>%
+  pivot_longer(6:9) %>%
   mutate(error = (value - beta1)^2)
+
+# saveRDS(errors, "sims_results/accuracy_f.RDS")
+# errors <- readRDS("data/accuracy_f.RDS")
+errors %>%
+  group_by(name) %>%
+  summarise(mean(error), median_error = median(error)) %>%
+  arrange(median_error)
+## monotone is best
 
 errors %>%
   group_by(nn, xx_sd, name, beta1) %>%
-  summarise(mean(error), median(error))
-## monotone is best
+  summarise(mean(error), median_error = median(error)) %>%
+  group_by(nn, xx_sd, beta1) %>%
+  arrange(median_error, .by_group=T) %>% print(n=Inf)
 
-# relative improvements
+
 errors %>%
-  group_by(nn, xx_sd, beta1, name) %>%
-  summarise(med = median(error)) %>%
-  pivot_wider(names_from="name", values_from="med") %>%
-  mutate(100*(expit - monotone)/expit,
-         100*(univar - monotone)/univar)
+  filter(name %in% c("monotone", "spline")) %>%
+  group_by(nn, xx_sd, name, beta1) %>%
+  summarise(median_error = median(error)) %>%
+  group_by(nn, xx_sd, beta1) %>%
+  arrange(median_error, .by_group=T) %>%
+  pivot_wider(names_from=name, values_from=median_error) %>%
+  mutate(spline_winner = spline < monotone) %>%
+  ungroup %>%
+  summarise(sum(spline_winner), 100*mean((monotone-spline)/spline))
 
 
-errors %>% ggplot(aes(x = as.character(nn), col = name, y = error)) +
-  facet_grid(xx_sd ~ beta1) +
-  geom_boxplot() +
-  scale_y_log10()
+# A tibble: 1 × 2
+# `sum(spline_winner)` `100 * mean((monotone - spline)/spline)`
+# <int>                                    <dbl>
+#   1                   14                                     38.0
+
+
+# spline is winner in 14/18 combos, on average by 38%
+
+# # Groups:   nn, xx_sd, beta1 [18]
+# nn xx_sd beta1 spline monotone
+# <dbl> <dbl> <dbl>  <dbl>    <dbl>
+#   1    30  0.25   0.5  1.27     1.88
+# 2    30  0.25   1    1.00     1.97
+# 3    30  0.25   2    2.49     2.81
+# 4    30  0.5    0.5  0.507    0.710
+# 5    30  0.5    1    0.605    0.828
+# 6    30  0.5    2    0.989    0.829
+# 7    50  0.25   0.5  0.609    1.30
+# 8    50  0.25   1    0.741    0.924
+# 9    50  0.25   2    1.39     1.25
+# 10    50  0.5    0.5  0.215    0.243
+# 11    50  0.5    1    0.328    0.427
+# 12    50  0.5    2    0.904    1.28
+# 13   100  0.25   0.5  0.635    0.872
+# 14   100  0.25   1    0.350    0.725
+# 15   100  0.25   2    0.942    2.01
+# 16   100  0.5    0.5  0.137    0.132
+# 17   100  0.5    1    0.196    0.260
+# 18   100  0.5    2    1.08     0.725

@@ -5,7 +5,7 @@ library(tidyverse)
 library(magrittr)
 library(happi)
 library(parallel)
-TM7_data <- readRDS("TM7_presence_absence.RDS") %>% as_tibble 
+TM7_data <- readRDS("data/TM7_presence_absence.RDS") %>% as_tibble 
 
 tm7_df <- TM7_data %>% 
   select(site, mean_coverage, `Cellulase/cellobiase CelA1`:ncol(.)) %>%
@@ -17,6 +17,9 @@ run_happi_tm7 <- function(colnum) {
   happi(outcome=unlist(tm7_df[,colnum]), 
         covariate=x_matrix, 
         quality_var=tm7_df$mean_coverage,
+        method="splines", 
+        firth=T, 
+        spline_df=4,
         max_iterations=1000, 
         change_threshold=0.01, 
         epsilon=0)
@@ -34,7 +37,7 @@ run_fisher_tm7 <- function(colnum) {
 
 ## takes ages! can speed up by lowering max_iterations (from 1000) or increasing change_threshold (from 0.01)
 tm7_results <- mclapply(3:715, run_happi_tm7, mc.cores=6)
-saveRDS(tm7_results, "tm7_happi_all_results.RDS")
+saveRDS(tm7_results, "tm7_happi_splines.RDS")
 
 tm7_results_glm <- lapply(3:715, run_glm_tm7)
 tm7_results_glm %<>% do.call(rbind, .)
@@ -53,7 +56,8 @@ hyp_results <- tibble("gene" = colnames(tm7_df)[3:715],
     mutate("qvalue" = p.adjust(pvalue, "BH")) %>%
     mutate(test = str_remove(test, "pvalue_")) %>% 
     pivot_wider(names_from="test", values_from="pvalue":"qvalue")
-saveRDS(hyp_results, "tm7_hyp_results_summary.RDS")
+#saveRDS(hyp_results, "tm7_hyp_results_summary.RDS")
+hyp_results <- readRDS("data/tm7_hyp_results_summary.RDS")
 
 hyp_results %>%
   filter(gene %in% c("Ribosomal protein L27", 
@@ -101,7 +105,7 @@ TM7_data %>%
   scale_y_continuous(breaks = c(0,1),
                      label = c("Not detected", "Detected"), limits=c(-0.32, 1.1)) +
   NULL
-# ggsave("../manuscript/figures/TM7_specific_comparisons.pdf", width = 10.5, height = 4.5)
+# ggsave("../manuscript/figures/TM7_specific_comparisons_04222022.pdf", width = 10.5, height = 4.5)
 
 ####################################
 ### get results for text

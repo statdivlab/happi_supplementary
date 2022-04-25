@@ -20,12 +20,13 @@ f_used <- logit_data %>%
   ylab("Proportion of subsamples containing gene") +
   xlab("Subsampled Sequencing Coverage")  +
   NULL
+f_used
 # ggsave("../../research/pauline/pangenomics-hypothesis-testing/manuscript/figures/f_DRR102664.pdf",
 #        height = 3.5, width = 5)
 
 
 ### type 1
-type1_all <- readRDS("sims_results/type1_all.RDS")
+type1_all <- readRDS("data/type1_results.RDS")
 type1_fig <- type1_all %>%
   mutate("iter" = 1:nrow(.)) %>%
   pivot_longer(5:7, values_to="pvalue", names_to="Method") %>%
@@ -53,7 +54,7 @@ type1_fig
 
 ### type 2
 
-t2 <- readRDS("sims_results/type2_all.RDS")
+t2 <- readRDS("data/type2_results.RDS")
 type2_fig <- t2 %>%
   group_by(nn, xx_sd, beta) %>%
   summarise("GLM-Rao" = mean(logreg < 0.05), "happi" = mean(happi < 0.05)) %>%
@@ -79,6 +80,6 @@ type2_fig <- t2 %>%
   NULL
 type2_fig
 
-ggarrange(type1_fig, type2_fig, nrow = 1, common.legend=T, legend="right")
-# ggsave("../../research/pauline/pangenomics-hypothesis-testing/manuscript/figures/simulation_04192022.pdf",
+ggpubr::ggarrange(type1_fig, type2_fig, nrow = 1, common.legend=T, legend="right")
+# ggsave("../../research/pauline/pangenomics-hypothesis-testing/manuscript/figures/simulation_04232022.pdf",
 #        height = 3.5, width = 12)

@@ -9,7 +9,7 @@ gam_model <- mgcv::gam(presence ~ s(coverage), family = binomial, data = logit_d
 
 epsilon <- 0
 
-run_power <- function(sim) {
+run_power_splines <- function(sim) {
   results_out <- matrix(NA, nrow = niter, ncol = 6)
   colnames(results_out) <- c("sim", "nn", "xx_sd", "beta", "logreg", "happi")
   results_out[, "sim"] <- sim
@@ -21,7 +21,8 @@ run_power <- function(sim) {
 
     nn <- combos$ns[sim]
     xx_sd <- combos$xx_sds[sim]
-    beta <- c(-1, combos$beta1[sim])
+    # beta <- c(-1, combos$beta1[sim])
+    beta <- c(0, combos$beta1[sim])
 
     mm <- seq(10, 40, length.out = nn)
     true_f <- predict(gam_model, type = "response", newdata = data.frame("coverage" = mm))
@@ -42,12 +43,13 @@ run_power <- function(sim) {
                                        test = "Rao")[2, "Pr(>Chi)"]
 
     happi_out <- happi(outcome = ys,
-                       covariate = xx,
-                       quality_var = mm,
-                       max_iterations = 50,
-                       nstarts = 1,
-                       change_threshold = 0.1,
-                       epsilon = 0)
+          covariate = xx,
+          quality_var = mm,
+          max_iterations = 50,
+          method="splines", firth=T, spline_df=4,
+          nstarts = 1,
+          change_threshold = 0.1,
+          epsilon = 0)
 
     results_out[bb, "happi"] <- happi_out$loglik$pvalue[!is.na(happi_out$loglik$pvalue)] %>% tail(1)
   }
@@ -64,19 +66,40 @@ beta1 <- seq(from = 0.5, to = 3, by = 0.5)
 combos <- crossing(xx_sds, ns, beta1)
 combos <- bind_cols("sim" = 1:nrow(combos), combos)
 combos
+niter <- 2
+run_power_splines(1)
+run_power_splines(19)
+run_power_splines(36)
 niter <- 250
-set.seed(102)
-results_type2_overnight_25 <- mclapply(1:36, run_power, mc.cores = 6)
+set.seed(200)
+type2_splines_1 <- mclapply(36:1, run_power_splines, mc.cores = 6)
 
 ####################
 #### 2nd half ######
 ####################
-set.seed(103)
+set.seed(201)
 niter <- 250
-results_type2_overnight_25_part_2 <- mclapply(1:36, run_power, mc.cores = 6)
+type2_splines_2 <- mclapply(36:1, run_power_splines, mc.cores = 6)
 
-all_type2 <- c(results_type2_overnight_25, results_type2_overnight_25_part_2) %>%
+type2_splines <- c(type2_splines_1, type2_splines_2) %>%
   do.call(rbind, .) %>%
   as_tibble
 
-# saveRDS(all_type2, "sims_results/type2_all.RDS")
+
+
+####################
+#### more ######
+####################
+set.seed(202)
+niter <- 250
+type2_splines_3 <- mclapply(36:1, run_power_splines, mc.cores = 6)
+
+set.seed(203)
+niter <- 250
+type2_splines_4 <- mclapply(36:1, run_power_splines, mc.cores = 6)
+
+type2_splines <- c(type2_splines_1, type2_splines_2, type2_splines_3, type2_splines_4) %>%
+  do.call(rbind, .) %>%
+  as_tibble
+
+# saveRDS(type2_splines, "type2_results.RDS")

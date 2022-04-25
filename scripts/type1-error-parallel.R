@@ -8,7 +8,7 @@ logit_data <- readRDS("data/logit_DRR102664.RDS")
 gam_model <- mgcv::gam(presence ~ s(coverage), family = binomial, data = logit_data, method = "REML")
 epsilon <- 0
 
-run_type1 <- function(sim) {
+run_type1_splines <- function(sim) {
   results_out <- matrix(NA, nrow = niter, ncol = 7)
   colnames(results_out) <- c("sim", "nn", "xx_sd", "beta", "logreg_rao", "logreg_lrt", "happi")
   results_out[, "sim"] <- sim
@@ -49,6 +49,7 @@ run_type1 <- function(sim) {
                        covariate = xx,
                        quality_var = mm,
                        max_iterations = 50,
+                       method="splines", firth=T, spline_df=4,
                        nstarts = 1,
                        change_threshold = 0.1,
                        epsilon = 0)
@@ -69,37 +70,31 @@ combos <- bind_cols("sim" = 1:nrow(combos), combos)
 combos
 niter <- 200
 set.seed(101)
-results_type1_bigger <- mclapply(1:6, run_type1, mc.cores = 6)
-results_type1_bigger_df <- do.call(rbind, results_type1_bigger) %>%
-  as_tibble
-# saveRDS(object=results_type1_bigger, file="sims_results/results_type1_bigger.RDS")
-
+type1_splines <- mclapply(1:6, run_type1_splines, mc.cores = 6)
 
 ####################
 #### 2nd half ######
 ####################
-ns <- c(30, 50, 100)
-xx_sds <- c(0.25, 0.5)
-beta1 <- 0
-combos <- crossing(xx_sds, ns, beta1)
-combos <- bind_cols("sim" = 1:nrow(combos), combos)
-combos
 niter <- 300
 set.seed(103)
-results_type1_bigger_part_b <- mclapply(1:6, run_type1, mc.cores = 6)
-results_type1_bigger_part_b_df <- do.call(rbind, results_type1_bigger_part_b) %>%
+type1_splines_part_b <- mclapply(1:6, run_type1_splines, mc.cores = 6)
+
+
+
+type1_splines_df <- c(type1_splines, type1_splines_part_b) %>%
+  do.call(rbind, .) %>%
   as_tibble
 
-type1_all <- bind_rows(results_type1_bigger_df, results_type1_bigger_part_b_df)
-# saveRDS(type1_all, "sims_results/type1_all.RDS")
+# saveRDS(type1_splines_df, "type1_results.RDS")
 
 ####################
 #### Statistics ####
 ####################
+any(is.na(type1_all$happi))
 mean((type1_all$logreg_rao - type1_all$logreg_lrt)^2)
 cor(type1_all$logreg_rao, type1_all$logreg_lrt)
 
-type1_all %>%
+type1_splines_df %>%
   mutate("iter" = 1:nrow(.)) %>%
   pivot_longer(5:7, values_to="pvalue", names_to="Method") %>%
   select(-sim) %>%
@@ -111,3 +106,14 @@ type1_all %>%
   arrange(T1) %>%
   mutate("lower" = 100*(T1 - 1.96*sqrt(T1 * (1-T1)/n)),
          "upper" = 100*(T1 + 1.96*sqrt(T1 * (1-T1)/n)))
+
+type1_splines_df %>%
+  mutate("iter" = 1:nrow(.)) %>%
+  pivot_longer(1:6, values_to="pvalue") %>%
+  mutate(sim = as.numeric(str_remove(name, "sim"))) %>%
+  full_join(combos) %>%
+  select(-seed, -name, -sim) %>%
+  group_by(xx_sds, ns) %>%
+  arrange(pvalue, .by_group = TRUE) %>%
+  mutate(theoretical = seq(1/niter, 1, length.out = niter),
+         Method = "GLM-Rao")
