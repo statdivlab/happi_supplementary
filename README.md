@@ -1,6 +1,5 @@
 # `happi` supplementary materials 
-This repository contains the necessary code and data to reproduce all results in the `happi` manuscript. [preprint available here](https://www.biorxiv.org/content/10.1101/2022.04.26.489591v1).  
-The `happi` `R` package can be found [here](https://github.com/statdivlab/happi).
+This repository contains the necessary code and data to reproduce all results in the `happi` manuscript. [preprint available here](https://www.biorxiv.org/content/10.1101/2022.04.26.489591v1). The `happi` `R` package can be found [here](https://github.com/statdivlab/happi).
 
 ##  How to  use this repository 
 Below you'll find a description of the `R` scripts and what analyses can be reproduced with each script. 
