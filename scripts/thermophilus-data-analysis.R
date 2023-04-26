@@ -132,26 +132,17 @@ set.seed(18)
 thermophilus_results_part1 <- mclapply(3:1708, run_happi_thermophilus, mc.cores=6)
 #saveRDS(thermophilus_results_part1,"thermophilus_results_part1_mar23.RDS")
 thermophilus_results_part2 <- mclapply(1709:2801, run_happi_thermophilus, mc.cores=6)
-saveRDS(thermophilus_results_part2,"thermophilus_results_part2_mar23.RDS")
-#thermophilus_results_part3 <- mclapply(3001:3419, run_happi_thermophilus, mc.cores=6)
+#saveRDS(thermophilus_results_part2,"thermophilus_results_part2_mar23.RDS")
+
 set.seed(10)
 ### e 0.01 
-#run_happi_thermophilus_e01(1)
 thermophilus_results_sensitivity_e01_part1 <- mclapply(3:1708, run_happi_thermophilus_e01, mc.cores=6)
 saveRDS(thermophilus_results_sensitivity_e01_part1,"thermophilus_results_sensitivity_e01_part1_mar23.RDS")
 thermophilus_results_pensitivity_e01_part2 <- mclapply(1709:2801, run_happi_thermophilus_e01, mc.cores=6)
 saveRDS(thermophilus_results_pensitivity_e01_part2,"thermophilus_results_sensitivity_e01_part2_mar23.RDS")
 set.seed(11)
 ### e 0.05 
-start_therm <- Sys.time()
-thermophilus_results_sensitivity_e05_part1 <- mclapply(3:502, run_happi_thermophilus_e05, mc.cores=1)
-end_therm <- Sys.time()
-end_therm - start_therm #Time difference of 17.60554 mins
-
 thermophilus_results_sensitivity_e05_part1 <- mclapply(3:1708, run_happi_thermophilus_e05, mc.cores=6)
-end_therm <- Sys.time()
-
-#0.016seconds per gene 
 saveRDS(thermophilus_results_sensitivity_e05_part1,"thermophilus_results_sensitivity_e05_part1.RDS")
 thermophilus_results_sensitivity_e05_part2 <- mclapply(1709:2801, run_happi_thermophilus_e05, mc.cores=6)
 saveRDS(thermophilus_results_sensitivity_e05_part2,"thermophilus_results_sensitivity_e05_part2.RDS")
@@ -222,8 +213,7 @@ pvalue_happi_e05 <- c(pvalue_happi_part5,
 pvalue_happi_e1 <- c(pvalue_happi_part7,
                      pvalue_happi_part8) %>% unlist
 
-sensitivity_results_BH <- tibble("Gene" = colnames(thermophilus_df)[3:2801], 
-                                 pvalue_happi_e0, 
+sensitivity_results_BH <- tibble("Gene" = colnames(thermophilus_df)[3:2801],  
                                  pvalue_happi_e01,
                                  pvalue_happi_e05, 
                                  pvalue_happi_e1) %>%
@@ -258,7 +248,6 @@ pvalue_happi <- pvalue_happi_e05 %>% unlist
 
 hyp_results_BH <- tibble("Gene" = colnames(thermophilus_df)[3:2801], 
                          pvalue_happi, 
-                         pvalue_fisher = thermophilus_results_fisher[,1],
                          pvalue_rao = thermophilus_results_glm[,1], 
                          pvalue_lrt = thermophilus_results_glm[,2]) %>%
   pivot_longer(cols = 2:5, names_to="test", values_to="pvalue") %>%
@@ -281,14 +270,9 @@ hyp_results <- tibble("gene" = colnames(thermophilus_df)[3:2801],
 #thermophilus_core
 
 hyp_results_BH <- hyp_results_BH %>% left_join(thermophilus_core, by = "Gene")
-saveRDS(hyp_results_BH,"hyp_results_BH_04032023.RDS")
-saveRDS(hyp_results_BH,"hyp_results_BH_04022023.RDS")
-hyp_results %>% 
-  select("gene", starts_with("qvalue")) %>%
-  pivot_longer(2:4) %>% 
-  filter(value < 0.05) %>%
-  group_by(name) %>%
-  summarise(n = n()) 
+#saveRDS(hyp_results_BH,"hyp_results_BH_04022023.RDS")
+hyp_results_BH<- readRDS("data/hyp_results_BH_04022023.RDS")
+
 
 hyp_results_BH %>%
   select("Gene", starts_with("qvalue")) %>%
@@ -347,7 +331,6 @@ my_therm_plot <- hyp_results_BH %>%
   mutate(Genome = ifelse(is.na(Core), "Accessory","Core")) %>% 
   arrange(Genome)
 
-#levels(plot$Core)
 library(forcats)
 happi_rao <-  my_therm_plot %>% 
   ggplot(aes(x = log10_pvalue_happi, y = log10_pvalue_rao,  group = Genome, color = Genome)) +
@@ -371,19 +354,7 @@ happi_lrt <-  my_therm_plot  %>%
   theme_bw() +
   scale_color_manual(values = c("Accessory" = "darkgrey", "Core" = "blue"))
 
-happi_fisher <-  my_therm_plot  %>% 
-  ggplot(aes(x = log10_pvalue_happi, y = log10_pvalue_fisher,  group = Genome, color = Genome)) +
-  geom_point(size = 2.5, alpha = 0.8) + 
-  geom_abline(intercept = 0, slope = 1) + 
-  xlim(0,16) + ylim(0,16) + 
-  ylab("-log10(pvalue Fisher)") + 
-  xlab("-log10(pvalue happi-a, epsilon 0.05)") + 
-  scale_color_discrete(name="Genome") + 
-  theme_bw() +
-  scale_color_manual(values = c("Accessory" = "darkgrey", "Core" = "blue"))
-ggpubr::ggarrange(happi_rao, happi_lrt , happi_fisher, nrow = 1, common.legend=T, legend="right")
-ggsave("log_pvalue_comparisons_thermophilus.png", height = 3.5, width = 12)
-
+sensitivity_results_BH <- readRDS("data/sensitivity_results_BH.RDS")
 sensitivity_results_BH %>%
   select("Gene", starts_with("qvalue")) %>%
   pivot_longer(2:5) %>% 
@@ -399,8 +370,9 @@ sensitivity_plot <- sensitivity_results_BH %>%
          log10_pvalue_happi_e1 = -log10(pvalue_happi_e1)) %>%
   mutate(Genome = ifelse(is.na(Core), "Accessory","Core")) %>% 
   arrange(Genome)
-saveRDS(sensitivity_results_BH,"sensitivity_results_BH.RDS")
-saveRDS(sensitivity_plot,"sensitivity_plot.RDS")
+sensitivity_plot <- readRDS("data/sensitivity_plot.RDS")
+#saveRDS(sensitivity_results_BH,"sensitivity_results_BH.RDS")
+#saveRDS(sensitivity_plot,"sensitivity_plot.RDS")
 describe_sensitivity_results <- sensitivity_results_BH %>% 
   mutate(e1_change = 100*(pvalue_happi_e1-pvalue_happi_e05)/pvalue_happi_e05, 
          e01_change = 100*(pvalue_happi_e01 - pvalue_happi_e05)/pvalue_happi_e05, 
@@ -411,8 +383,6 @@ describe_sensitivity_results <- sensitivity_results_BH %>%
 
 describe_sensitivity_results %>%
   summarise(sum(intersection))
-
-
 
 describe_sensitivity_results %>% 
   mutate(increase5_e1 = ifelse(e1_change > 5, 1,0),
@@ -426,7 +396,6 @@ describe_sensitivity_results %>%
   summarise("prop_change" = mean(percentchange),
             "n" = n()) %>%
   arrange(prop_change)
-
 
 happi_e01 <-  sensitivity_plot %>% 
   ggplot(aes(x = log10_pvalue_happi_e05, y = log10_pvalue_happi_e01)) +

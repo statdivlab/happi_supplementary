@@ -61,7 +61,8 @@ my_dataframe_power4 <- my_list_power4 %>%
          happi_npLRT = as.numeric(happi_npLRT))
 
 my_power_results <- my_dataframe_power %>% full_join(my_dataframe_power2) %>% full_join(my_dataframe_power3) %>% full_join(my_dataframe_power4)
-
+#saveRDS(my_power_results,"power_results_03302023.RDS")
+my_power_results <- readRDS("data/power_results_03302023.RDS")
 power_summary <- my_power_results %>% 
   as_tibble() %>% 
   mutate("iter" = 1:nrow(.)) %>%
@@ -72,7 +73,6 @@ power_summary <- my_power_results %>%
             "n" = n()) %>%
   ungroup 
 
-#saveRDS(my_power_results,"power_results_03302023.RDS")
 
 type2_fig <- my_power_results %>%
   group_by(nn, xx_sd, beta) %>%
@@ -100,19 +100,6 @@ type2_fig <- my_power_results %>%
   NULL
 type2_fig
 
-#saveRDS(type2_fig, "type2_fig_mar292023.RDS")
-
 ggpubr::ggarrange(my_type1_plot, type2_fig, nrow = 1, common.legend=T, legend="right")
 ggsave("simulation_03302023.pdf",
        height = 3.5, width = 12)
-
-
-power <- my_dataframe_power %>% 
-  as_tibble() %>% 
-  mutate("iter" = 1:nrow(.)) %>%
-  pivot_longer(5:7, values_to="pvalue", names_to="Method") %>%
-  select(-sim) %>%
-  group_by(xx_sd, nn, Method,beta) %>%
-  summarise("Power" = mean(pvalue<0.05),
-            "n" = n()) %>%
-  ungroup 

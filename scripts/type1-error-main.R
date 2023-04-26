@@ -24,10 +24,9 @@ my_dataframe3 <- my_list3 %>%
   as_tibble %>% 
   select(-happi_pbLRT)
 
-my_final_dataframe <- rbind(my_dataframe, my_dataframe2, my_dataframe3)
-#saveRDS(my_final_dataframe, "type1_nplrt_full_results_Mar27.RDS")
-#saveRDS(my_data,"type1_pblrt_full_results_Mar7.RDS")
-#my_data <- readRDS("type1_pblrt_full_results.RDS")
+#my_final_dataframe <- rbind(my_dataframe, my_dataframe2, my_dataframe3)
+
+my_final_dataframe <- readRDS("data/type1_results_03302023.RDS")
 T1_stats <- my_final_dataframe %>%
   as_tibble() %>% 
   mutate("iter" = 1:nrow(.)) %>%
@@ -44,7 +43,6 @@ T1_stats <- my_final_dataframe %>%
                                ifelse(Method == "happi_npLRT","happi-np",Method))) %>%
   select(-Method) %>% 
   rename(Method = Method_Names)
-
 #saveRDS(my_final_dataframe,"type1_results_03302023.RDS")
 
 my_type1_plot <- my_final_dataframe %>%
