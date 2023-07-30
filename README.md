@@ -1,3 +1,4 @@
+[![DOI](https://zenodo.org/badge/483091425.svg)](https://zenodo.org/badge/latestdoi/483091425)
 # `happi` supplementary materials 
 This repository contains the necessary code and data to reproduce all results in the `happi` manuscript. [preprint available here](https://www.biorxiv.org/content/10.1101/2022.04.26.489591v1). The `happi` `R` package can be found [here](https://github.com/statdivlab/happi).
 
