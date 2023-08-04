@@ -1,6 +1,8 @@
-[![DOI](https://zenodo.org/badge/483091425.svg)](https://zenodo.org/badge/latestdoi/483091425)
+
 # `happi` supplementary materials 
-This repository contains the necessary code and data to reproduce all results in the `happi` manuscript. [preprint available here](https://www.biorxiv.org/content/10.1101/2022.04.26.489591v1). The `happi` `R` package can be found [here](https://github.com/statdivlab/happi).
+This repository contains the necessary code and data to reproduce all results in the `happi` manuscript. [preprint available here](https://www.biorxiv.org/content/10.1101/2022.04.26.489591v1). The code and data contained in this repository can also be found at: [![DOI](https://zenodo.org/badge/483091425.svg)](https://zenodo.org/badge/latestdoi/483091425). 
+
+The most recent `happi` `R` package is available: [here](https://github.com/statdivlab/happi). `happi` version 0.8.7 can be used to produce the manuscript results and a static version has been made available: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8216120.svg)](https://doi.org/10.5281/zenodo.8216120). 
 
 ##  How to  use this repository 
 Below you'll find a description of the `R` scripts and what analyses can be reproduced with each script. 

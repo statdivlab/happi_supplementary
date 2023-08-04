@@ -62,14 +62,14 @@ sums_of_things <- colSums(nr_thermophillus_data[21:2819]) %>% as_tibble() %>%
 #157 2819
 
 saveRDS(nr_thermophillus_data,"thermophilus_data.RDS")
-nr_thermophillus_data <- readRDS("thermophilus_data.RDS")
+nr_thermophillus_data <- readRDS("data/thermophilus_data.RDS")
 thermophilus_df <- nr_thermophillus_data %>% 
   select(Completeness,Country,`pbpX~~~pbpX_1~~~pbpX_2`:ncol(.) ) %>% 
   mutate(Spain = ifelse(Country == "Spain", 1,0)) %>% 
   select(Completeness, Spain, `pbpX~~~pbpX_1~~~pbpX_2`:`smc_2`)
 
 #saveRDS(thermophilus_df,"thermophilus_df.RDS")
-thermophilus_df <- readRDS("thermophilus_df.RDS")
+thermophilus_df <- readRDS("data/thermophilus_df.RDS")
 thermophilus_df <- thermophilus_df %>% 
   mutate(log_completeness = log(Completeness))
 x_matrix <- model.matrix(~Spain, data = thermophilus_df)
